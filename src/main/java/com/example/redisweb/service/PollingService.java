@@ -92,36 +92,29 @@ public class PollingService {
         // 获取历史记录
         List<String> recordArr = getList(redisTemplate.opsForValue().get(keyGroups).toString());
 
-        // 判断 两个 集合是否有交集
-        boolean flag= !Collections.disjoint(groups,recordArr);
-        if(!flag){  // 不存在 交集
-            ret = groups.get(0);
-            updateData(keyIndex,0+"",keyGroups,groups);
-            return ret;
-        }
-        List<String> tempArr = new ArrayList<>();
-        recordArr.stream().forEach(g -> tempArr.add(g)); // 数据复制过来
-        // 假设 所有组名不重复
-        recordArr.retainAll(groups);  // 获取所有交集 -> recordArr
+        boolean flagFinded= false;
+        int findIndex = 0;
         // 定位遍历循环
-        for(int i = index+1,j=0;j<tempArr.size();i++,j++){
-            if(i==tempArr.size()){
+        for(int i = index+1,j=0;j<recordArr.size();i++,j++){
+            if(i==recordArr.size()){
                 i = 0;
             }
-            if(recordArr.contains(tempArr.get(i))){ // 记录轮牌 第一个存在的交集 为当前轮牌取值
-                ret = tempArr.get(i);
+            for(int k=0; k<groups.size(); k++){
+                if(groups.get(k).equals(recordArr.get(i))){
+                    flagFinded = true;
+                    ret =groups.get(k);
+                    findIndex = k;
+                    break;
+                }
+            }
+            if(flagFinded){
                 break;
             }
         }
-        // 获取当前位置
-        int currIndex =0;
-        for (int i=0; i<groups.size();i++){
-            if (groups.get(i).equals(ret)){
-                currIndex = i;
-                break;
-            }
+        if(!flagFinded){ // 不存在 直接取第一个
+            ret = groups.get(0);
         }
-        updateData(keyIndex,currIndex+"",keyGroups,groups);
+        updateData(keyIndex,findIndex+"",keyGroups,groups);
         return ret;
     }
 
